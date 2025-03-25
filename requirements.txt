@@ -1,0 +1,6 @@
+matplotlib~=3.10.1
+PyQt5~=5.15.11
+psutil
+scikit-learn
+numpy
+joblib
