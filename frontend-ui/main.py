@@ -109,7 +109,6 @@ class MainWindow(QWidget):
         self.canvas.draw()
 
     def get_color(self, value):
-        """Return a color based on usage percentage."""
         if value < 50:
             return "green"
         elif value < 80:
