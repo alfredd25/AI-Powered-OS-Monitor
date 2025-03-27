@@ -4,10 +4,6 @@ import time
 from database import log_system_stats
 
 def write_system_stats(cpu, memory, disk, network):
-    """
-    Writes system stats to a file in the following format:
-    cpu, memory, disk, network
-    """
     with open("system_stats.txt", "w") as f:
         f.write(f"{cpu}, {memory}, {disk}, {network}")
 
