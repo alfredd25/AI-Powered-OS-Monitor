@@ -1,7 +1,7 @@
 import sqlite3
 
 def create_database():
-    conn = sqlite3.connect("system_logs.db")
+    conn = sqlite3.connect("../frontend-ui/system_logs.db")
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS logs (
@@ -18,7 +18,7 @@ def create_database():
     print("Database and table created.")
 
 def log_system_stats(cpu, memory, disk, network):
-    conn = sqlite3.connect("system_logs.db")
+    conn = sqlite3.connect("../frontend-ui/system_logs.db")
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO logs (cpu_usage, memory_usage, disk_usage, network_usage)

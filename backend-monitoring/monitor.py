@@ -1,28 +1,26 @@
-
 import psutil
 import time
 import threading
 import queue
 import sqlite3
+import os
 
+log_queue = queue.Queue()
 
-def write_system_stats(cpu, memory, disk, network):
-
-    log_queue = queue.Queue()
 
 def write_system_stats_to_file(cpu, memory, disk, network):
-
-    with open("system_stats.txt", "w") as f:
+    with open("../frontend-ui/system_stats.txt", "w") as f:
         f.write(f"{cpu}, {memory}, {disk}, {network}")
 
+
+
 def database_worker(db_path, log_queue):
-    
     conn = sqlite3.connect(db_path, check_same_thread=False)
     cursor = conn.cursor()
     while True:
         try:
             log_entry = log_queue.get(timeout=5)
-            if log_entry is None: 
+            if log_entry is None:
                 break
             cpu, memory, disk, network = log_entry
             cursor.execute("""
@@ -32,12 +30,14 @@ def database_worker(db_path, log_queue):
             conn.commit()
             log_queue.task_done()
         except queue.Empty:
-            continue  
+            continue
     conn.close()
 
+
 def monitor_system():
-    
-    db_path = "system_logs.db"
+    db_path = "../frontend-ui/system_logs.db"
+
+
     worker_thread = threading.Thread(target=database_worker, args=(db_path, log_queue))
     worker_thread.daemon = True
     worker_thread.start()
