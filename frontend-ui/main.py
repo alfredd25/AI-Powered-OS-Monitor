@@ -111,9 +111,18 @@ class MainWindow(QWidget):
             self.cpu_data = self.cpu_data[-20:]
             self.time_counter = self.time_counter[-20:]
 
-        self.canvas.line.set_data(self.time_counter, self.cpu_data)
-        self.canvas.ax.set_xlim(min(self.time_counter), max(self.time_counter))
-        self.canvas.draw()
+        if self.time_counter and self.cpu_data:
+            self.canvas.line.set_data(self.time_counter, self.cpu_data)
+
+            xmin, xmax = min(self.time_counter), max(self.time_counter)
+            x_padding = (xmax - xmin) * 0.05 if xmax != xmin else 1
+            self.canvas.ax.set_xlim(xmin - x_padding, xmax + x_padding)
+
+            ymin, ymax = min(self.cpu_data), max(self.cpu_data)
+            y_padding = (ymax - ymin) * 0.1 if ymax != ymin else 10
+            self.canvas.ax.set_ylim(ymin - y_padding, ymax + y_padding)
+
+            self.canvas.draw()
 
     def get_color(self, value):
         if value < 50:
