@@ -21,7 +21,6 @@ def write_system_stats_to_file(cpu, memory, disk, network, anomaly):
         f.write(f"{cpu}, {memory}, {disk}, {network}, {anomaly}")
 
 
-
 def database_worker(db_path, log_queue):
     conn = sqlite3.connect(db_path, check_same_thread=False)
     cursor = conn.cursor()

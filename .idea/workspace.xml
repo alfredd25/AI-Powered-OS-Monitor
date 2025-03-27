@@ -6,9 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="366166da-5319-4c47-bbb1-4b162918ac73" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-monitoring/data_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend-monitoring/data_handler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend-monitoring/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend-monitoring/database.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-monitoring/monitor.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend-monitoring/monitor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-monitoring/monitor_with_anomaly.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend-monitoring/monitor_with_anomaly.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend-ui/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/frontend-ui/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -45,6 +44,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\alfre\OneDrive\Desktop\AI-Powered-OS-Monitor\ml-ai" />
       <recent name="C:\Users\alfre\OneDrive\Desktop\AI-Powered-OS-Monitor\frontend-ui" />
     </key>
   </component>

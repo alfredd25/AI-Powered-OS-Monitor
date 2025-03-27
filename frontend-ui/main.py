@@ -7,31 +7,33 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 class DataFetcher(QThread):
-    newData = pyqtSignal(float, float, float, float)  # cpu, memory, disk, network
+    newData = pyqtSignal(float, float, float, float, int)
 
     def run(self):
         while True:
-            cpu, memory, disk, network = self.read_stats()
-            self.newData.emit(cpu, memory, disk, network)
+            cpu, memory, disk, network, anomaly = self.read_stats()
+            self.newData.emit(cpu, memory, disk, network, anomaly)
             time.sleep(2)
 
     def read_stats(self):
-        if os.path.exists("system_stats.txt"):
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "system_stats.txt")
+        if os.path.exists(file_path):
             try:
-                with open("system_stats.txt", "r") as file:
+                with open(file_path, "r") as file:
                     content = file.read().strip()
                     if content:
                         parts = content.split(",")
-                        if len(parts) >= 4:
+                        if len(parts) >= 5:
                             return (
                                 float(parts[0].strip()),
                                 float(parts[1].strip()),
                                 float(parts[2].strip()),
-                                float(parts[3].strip())
+                                float(parts[3].strip()),
+                                int(parts[4].strip())
                             )
             except Exception as e:
                 print("Error reading system stats:", e)
-        return 0.0, 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, 0.0, 0
 
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=3, dpi=100):
@@ -70,10 +72,15 @@ class MainWindow(QWidget):
         self.network_label.setAlignment(Qt.AlignCenter)
         self.network_label.setStyleSheet("font-size: 18px;")
 
+        self.anomaly_label = QLabel()
+        self.anomaly_label.setAlignment(Qt.AlignCenter)
+        self.anomaly_label.setStyleSheet("font-size: 18px; color: red;")
+
         stats_layout.addWidget(self.cpu_label)
         stats_layout.addWidget(self.memory_label)
         stats_layout.addWidget(self.disk_label)
         stats_layout.addWidget(self.network_label)
+        stats_layout.addWidget(self.anomaly_label)
 
         self.canvas = MplCanvas(self, width=5, height=3, dpi=100)
         self.cpu_data = []
@@ -88,11 +95,13 @@ class MainWindow(QWidget):
         self.data_fetcher.newData.connect(self.update_stats)
         self.data_fetcher.start()
 
-    def update_stats(self, cpu, memory, disk, network):
+    def update_stats(self, cpu, memory, disk, network, anomaly):
         self.cpu_label.setText(f"<span style='color:{self.get_color(cpu)}'>CPU: {cpu:.1f}%</span>")
         self.memory_label.setText(f"<span style='color:{self.get_color(memory)}'>Memory: {memory:.1f}%</span>")
         self.disk_label.setText(f"<span style='color:{self.get_color(disk)}'>Disk: {disk:.1f}%</span>")
         self.network_label.setText(f"<span style='color:{self.get_color(network)}'>Network: {network:.1f}%</span>")
+        anomaly_text = "Anomaly Detected!" if anomaly == 1 else "Normal"
+        self.anomaly_label.setText(anomaly_text)
 
         self.cpu_data.append(cpu)
         self.counter += 2
@@ -113,7 +122,6 @@ class MainWindow(QWidget):
             return "orange"
         else:
             return "red"
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
