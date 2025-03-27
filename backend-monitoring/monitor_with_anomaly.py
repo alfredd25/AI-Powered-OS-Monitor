@@ -20,8 +20,9 @@ def write_system_stats_to_file(cpu, memory, disk, network, anomaly):
     with open(STATS_FILE, "w") as f:
         f.write(f"{cpu}, {memory}, {disk}, {network}, {anomaly}")
 
+
+
 def database_worker(db_path, log_queue):
-    
     conn = sqlite3.connect(db_path, check_same_thread=False)
     cursor = conn.cursor()
     while True:
@@ -39,6 +40,7 @@ def database_worker(db_path, log_queue):
         except queue.Empty:
             continue
     conn.close()
+
 
 def monitor_system():
     
@@ -64,6 +66,7 @@ def monitor_system():
         log_queue.put((cpu_usage, memory_usage, disk_usage, network_usage, anomaly_flag))
 
         time.sleep(2)
+
 
 if __name__ == '__main__':
     monitor_system()

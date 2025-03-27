@@ -4,7 +4,7 @@ import csv
 
 def retrieve_historical_data(limit=None):
     
-    conn = sqlite3.connect("system_logs.db")
+    conn = sqlite3.connect("../frontend-ui/system_logs.db")
     cursor = conn.cursor()
     query = "SELECT timestamp, cpu_usage, memory_usage, disk_usage, network_usage FROM logs ORDER BY timestamp DESC"
     if limit:
