@@ -18,10 +18,6 @@ An AI-powered system monitoring tool that collects real-time system metrics, log
 
 The AI-Powered OS Monitor continuously tracks system metrics (CPU, memory, disk, and network usage) and logs them into a SQLite database. An anomaly detection model based on Isolation Forest identifies unusual patterns. The results are displayed in a real-time PyQt5 UI, which includes a dynamic graph and alert labels.
 
-## Project Structure
-
-AI-Powered-OS-Monitor/ ├── backend-monitoring/ │ ├── monitor.py # Basic system monitoring script │ ├── monitor_with_anomaly.py # Monitoring script with integrated anomaly detection │ ├── database.py # Database setup and logging functions │ └── data_handler.py # Additional data processing functions (if needed) ├── frontend-ui/ │ ├── main.py # PyQt5 UI for real-time display of system metrics │ ├── system_stats.txt # Temporary file updated with system stats │ └── system_logs.db # SQLite database for logging system metrics └── ml-ai/ ├── anomaly_detection.py # Training and prediction functions for anomaly detection └── isolation_forest_model.pkl # Trained model file (generated via anomaly_detection.py)
-
 
 ## Requirements
 
