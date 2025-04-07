@@ -2,17 +2,21 @@ import sys
 import os
 import time
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
-from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QHBoxLayout, QGridLayout, QSizePolicy
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+# Apply a clean style
+plt.style.use('ggplot')
+
 
 class DataFetcher(QThread):
     newData = pyqtSignal(float, float, float, float, int)
 
     def run(self):
         while True:
-            cpu, memory, disk, network, anomaly = self.read_stats()
-            self.newData.emit(cpu, memory, disk, network, anomaly)
+            stats = self.read_stats()
+            self.newData.emit(*stats)
             time.sleep(2)
 
     def read_stats(self):
@@ -20,109 +24,136 @@ class DataFetcher(QThread):
         if os.path.exists(file_path):
             try:
                 with open(file_path, "r") as file:
-                    content = file.read().strip()
-                    if content:
-                        parts = content.split(",")
-                        if len(parts) >= 5:
-                            return (
-                                float(parts[0].strip()),
-                                float(parts[1].strip()),
-                                float(parts[2].strip()),
-                                float(parts[3].strip()),
-                                int(parts[4].strip())
-                            )
+                    parts = file.read().strip().split(",")
+                    if len(parts) >= 5:
+                        return (
+                            float(parts[0].strip()),
+                            float(parts[1].strip()),
+                            float(parts[2].strip()),
+                            float(parts[3].strip()),
+                            int(parts[4].strip())
+                        )
             except Exception as e:
                 print("Error reading system stats:", e)
         return 0.0, 0.0, 0.0, 0.0, 0
 
+
 class MplCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=3, dpi=100):
-        self.fig, self.ax = plt.subplots(figsize=(width, height), dpi=dpi)
+    def __init__(self, title, ylabel, color, ylim=(0, 100), dynamic_ylim=False):
+        self.fig, self.ax = plt.subplots(figsize=(5, 3), dpi=100)
         super().__init__(self.fig)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.updateGeometry()
-        self.ax.set_title("CPU Usage Over Time")
+
+        self.ax.set_title(title)
         self.ax.set_xlabel("Time (s)")
-        self.ax.set_ylabel("CPU Usage (%)")
-        self.ax.set_ylim(0, 100)
-        self.line, = self.ax.plot([], [], lw=2)
+        self.ax.set_ylabel(ylabel)
+        if not dynamic_ylim:
+            self.ax.set_ylim(*ylim)
+        self.ax.grid(True)
+
+        self.line, = self.ax.plot([], [], lw=2, color=color, label=title)
+        self.scatter = self.ax.scatter([], [], color='red', marker='x', label='Anomaly')
+
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🚀 AI-Powered OS Monitor")
-        self.setGeometry(200, 200, 600, 500)
+        self.setGeometry(100, 100, 900, 720)
 
-        main_layout = QVBoxLayout()
-        stats_layout = QHBoxLayout()
+        # Layouts
+        self.labels_layout = QHBoxLayout()
+        self.chart_layout = QGridLayout()
+        self.main_layout = QVBoxLayout()
 
-        self.cpu_label = QLabel()
-        self.cpu_label.setAlignment(Qt.AlignCenter)
-        self.cpu_label.setStyleSheet("font-size: 18px;")
-
-        self.memory_label = QLabel()
-        self.memory_label.setAlignment(Qt.AlignCenter)
-        self.memory_label.setStyleSheet("font-size: 18px;")
-
-        self.disk_label = QLabel()
-        self.disk_label.setAlignment(Qt.AlignCenter)
-        self.disk_label.setStyleSheet("font-size: 18px;")
-
-        self.network_label = QLabel()
-        self.network_label.setAlignment(Qt.AlignCenter)
-        self.network_label.setStyleSheet("font-size: 18px;")
-
-        self.anomaly_label = QLabel()
+        # Labels
+        self.cpu_label = self._create_label()
+        self.memory_label = self._create_label()
+        self.disk_label = self._create_label()
+        self.network_label = self._create_label()
+        self.anomaly_label = QLabel("Normal")
         self.anomaly_label.setAlignment(Qt.AlignCenter)
-        self.anomaly_label.setStyleSheet("font-size: 18px; color: red;")
+        self.anomaly_label.setStyleSheet("font-size: 16px; color: red;")
 
-        stats_layout.addWidget(self.cpu_label)
-        stats_layout.addWidget(self.memory_label)
-        stats_layout.addWidget(self.disk_label)
-        stats_layout.addWidget(self.network_label)
-        stats_layout.addWidget(self.anomaly_label)
+        for lbl in [self.cpu_label, self.memory_label, self.disk_label, self.network_label, self.anomaly_label]:
+            self.labels_layout.addWidget(lbl)
 
-        self.canvas = MplCanvas(self, width=5, height=3, dpi=100)
-        self.cpu_data = []
-        self.time_counter = []
+        # Charts
+        self.cpu_canvas = MplCanvas("CPU Usage", "CPU (%)", "blue")
+        self.memory_canvas = MplCanvas("Memory Usage", "Memory (%)", "green")
+        self.disk_canvas = MplCanvas("Disk Usage", "Disk (%)", "orange")
+        self.network_canvas = MplCanvas("Network Usage", "Network (MB)", "purple", ylim=(0, 50), dynamic_ylim=True)
+
+        self.chart_layout.addWidget(self.cpu_canvas, 0, 0)
+        self.chart_layout.addWidget(self.memory_canvas, 0, 1)
+        self.chart_layout.addWidget(self.disk_canvas, 1, 0)
+        self.chart_layout.addWidget(self.network_canvas, 1, 1)
+
+        # Final layout
+        self.main_layout.addLayout(self.labels_layout)
+        self.main_layout.addLayout(self.chart_layout)
+        self.setLayout(self.main_layout)
+
+        # Data buffers
+        self.max_points = 50
         self.counter = 0
+        self.timestamps = []
+        self.cpu_data = []
+        self.memory_data = []
+        self.disk_data = []
+        self.network_data = []
+        self.anomaly_points = []  # [(time, cpu_value), ...]
 
-        main_layout.addLayout(stats_layout)
-        main_layout.addWidget(self.canvas)
-        self.setLayout(main_layout)
-
+        # Data fetcher thread
         self.data_fetcher = DataFetcher()
         self.data_fetcher.newData.connect(self.update_stats)
         self.data_fetcher.start()
 
+    def _create_label(self):
+        lbl = QLabel()
+        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setStyleSheet("font-size: 16px;")
+        return lbl
+
     def update_stats(self, cpu, memory, disk, network, anomaly):
+        self.counter += 2
+        self.timestamps.append(self.counter)
+        self.cpu_data.append(cpu)
+        self.memory_data.append(memory)
+        self.disk_data.append(disk)
+        self.network_data.append(network)
+
+        if len(self.timestamps) > self.max_points:
+            self.timestamps = self.timestamps[-self.max_points:]
+            self.cpu_data = self.cpu_data[-self.max_points:]
+            self.memory_data = self.memory_data[-self.max_points:]
+            self.disk_data = self.disk_data[-self.max_points:]
+            self.network_data = self.network_data[-self.max_points:]
+            self.anomaly_points = [(x, y) for x, y in self.anomaly_points if x >= self.timestamps[0]]
+
+        # Label Updates
         self.cpu_label.setText(f"<span style='color:{self.get_color(cpu)}'>CPU: {cpu:.1f}%</span>")
         self.memory_label.setText(f"<span style='color:{self.get_color(memory)}'>Memory: {memory:.1f}%</span>")
         self.disk_label.setText(f"<span style='color:{self.get_color(disk)}'>Disk: {disk:.1f}%</span>")
         self.network_label.setText(f"<span style='color:{self.get_color(network)}'>Network: {network:.1f}%</span>")
-        anomaly_text = "Anomaly Detected!" if anomaly == 1 else "Normal"
-        self.anomaly_label.setText(anomaly_text)
+        self.anomaly_label.setText("Anomaly Detected!" if anomaly else "Normal")
 
-        self.cpu_data.append(cpu)
-        self.counter += 2
-        self.time_counter.append(self.counter)
+        # Store anomaly point if any
+        if anomaly == 1:
+            self.anomaly_points.append((self.counter, cpu))
 
-        if len(self.cpu_data) > 20:
-            self.cpu_data = self.cpu_data[-20:]
-            self.time_counter = self.time_counter[-20:]
+        # Update all charts
+        self.update_canvas(self.cpu_canvas, self.cpu_data, self.anomaly_points)
+        self.update_canvas(self.memory_canvas, self.memory_data)
+        self.update_canvas(self.disk_canvas, self.disk_data)
+        self.update_canvas(self.network_canvas, self.network_data)
 
-        if self.time_counter and self.cpu_data:
-            self.canvas.line.set_data(self.time_counter, self.cpu_data)
+    def update_canvas(self, canvas, ydata, anomaly_pts=None):
+        canvas.line.set_data(self.timestamps, ydata)
+        canvas.ax.set_xlim(min(self.timestamps), max(self.timestamps))
 
-            xmin, xmax = min(self.time_counter), max(self.time_counter)
-            x_padding = (xmax - xmin) * 0.05 if xmax != xmin else 1
-            self.canvas.ax.set_xlim(xmin - x_padding, xmax + x_padding)
-
-            ymin, ymax = min(self.cpu_data), max(self.cpu_data)
-            y_padding = (ymax - ymin) * 0.1 if ymax != ymin else 10
-            self.canvas.ax.set_ylim(ymin - y_padding, ymax + y_padding)
-
-            self.canvas.draw()
+        canvas.draw()
 
     def get_color(self, value):
         if value < 50:
